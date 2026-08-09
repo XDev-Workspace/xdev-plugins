@@ -39,32 +39,17 @@ async function statusTable(ctx) {
 export default function xdevExtension(pi) {
   pi.setLabel?.("xdev (bundled plugin manager)");
 
-  // Dispatch each constituent's OWN slash command through the prompt flow —
-  // extension commands execute immediately, mutating their in-process state
-  // and status line, exactly like typing them. No reload/restart needed.
-  function dispatchLive(args, ctx) {
-    if (typeof pi.sendUserMessage === "function") {
-      for (const text of args) pi.sendUserMessage(text);
-      return true;
-    }
-    // Older omp without sendUserMessage: fall back to reload (entries still persist).
-    if (ctx?.reload) {
-      ctx.reload();
-      return true;
-    }
-    return false;
-  }
+  // Background-only apply: config defaults + session entries are written
+  // silently. The in-place constituents need a session restart to adopt them
+  // (their state is only re-read at session_start), so we say so up front
+  // instead of pretending a reload does it.
+  const restartHint = "Restart the session to apply: /q, then relaunch omp.";
 
-  async function applyLevel(level, ctx) {
-    // Defaults → fresh sessions start at the level.
+  function applyLevel(level) {
     setCavemanDefault(level);
     setPonytailDefault(level === "off" ? "off" : level);
-    // Entries → resume/restart consistency (constituents scan these at session_start).
     pi.appendEntry("caveman-level", { level });
     pi.appendEntry("ponytail-mode", { mode: level === "off" ? "off" : level });
-    // Live apply → native commands, instant in-place.
-    const cmd = level === "off" ? "off" : level;
-    dispatchLive([`/caveman ${cmd}`, `/ponytail ${cmd}`], ctx);
   }
 
   const summaryLine = (level) =>
@@ -87,16 +72,16 @@ export default function xdevExtension(pi) {
 
         const level = normalizeLevel(cmd);
         if (level) {
-          await applyLevel(level, ctx);
-          ctx?.ui?.notify?.(`xdev ${level}: ${summaryLine(level)}`, "info");
+          applyLevel(level);
+          ctx?.ui?.notify?.(`xdev: ${summaryLine(level)} saved. ${restartHint}`, "info");
           return;
         }
 
         if (cmd === "on" || cmd === "off") {
           const level = cmd === "on" ? "full" : "off";
-          await applyLevel(level, ctx);
+          applyLevel(level);
           setRtkEnabled(cmd !== "off");
-          ctx?.ui?.notify?.(`xdev ${cmd}: ${summaryLine(level)}`, "info");
+          ctx?.ui?.notify?.(`xdev: ${summaryLine(level)} saved. ${restartHint}`, "info");
           return;
         }
 
