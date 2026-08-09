@@ -50,10 +50,10 @@ are user-scope in omp).
 
 ## How it works
 
-- `xdev-plugin-manifest.json` in the agent dir (`~/.omp/agent/`) is the
+- `xdev-manifest.json` in the agent dir (`~/.omp/agent/`) is the
   source of truth: constituents + immutable pins. Seeded from the packaged
   `manifest.json`; `upgrade` rewrites pins. Rollback = revert pins and
-  `pi plugin install` them again.
+  `pi install` the old versions again.
 - Version changes always run through pi's own installer
   (`pi install npm:name@version`, omp's rollback stays active). The bundle
   never touches node_modules directly.
