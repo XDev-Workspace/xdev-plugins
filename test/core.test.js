@@ -32,3 +32,23 @@ test("state manifest seeds from packaged manifest.json", () => {
 test("installedVersion returns null for unknown package", () => {
   assert.equal(installedVersion("xdev-nope-package"), null);
 });
+
+test("caveman default lands in XDG pi/agent dir (its real read path)", async () => {
+  const fakeXdg = mkdtempSync(join(tmpdir(), "xdev-xdg-"));
+  const saved = { xdg: process.env.XDG_CONFIG_HOME, pi: process.env.PI_CODING_AGENT_DIR };
+  process.env.XDG_CONFIG_HOME = fakeXdg;
+  delete process.env.PI_CODING_AGENT_DIR;
+  try {
+    const { setCavemanDefault } = await import("../lib/modes.js");
+    setCavemanDefault("lite");
+    const written = JSON.parse(await import("node:fs/promises").then((fs) => fs.readFile(join(fakeXdg, "pi", "agent", "caveman.json"), "utf8")));
+    assert.equal(written.defaultLevel, "lite");
+    // and nothing in the generic agent dir
+    const { existsSync } = await import("node:fs");
+    assert.equal(existsSync(join(fakeAgent, "caveman.json")), false);
+  } finally {
+    process.env.XDG_CONFIG_HOME = saved.xdg;
+    if (saved.pi) process.env.PI_CODING_AGENT_DIR = saved.pi;
+    else delete process.env.PI_CODING_AGENT_DIR;
+  }
+});
