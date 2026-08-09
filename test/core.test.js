@@ -33,6 +33,21 @@ test("installedVersion returns null for unknown package", () => {
   assert.equal(installedVersion("xdev-nope-package"), null);
 });
 
+test("ponytail default written is read back immediately (same process)", async () => {
+  const fakeXdg = mkdtempSync(join(tmpdir(), "xdev-pntly-"));
+  const saved = process.env.XDG_CONFIG_HOME;
+  process.env.XDG_CONFIG_HOME = fakeXdg;
+  try {
+    const { setPonytailDefault, readModes } = await import("../lib/modes.js");
+    setPonytailDefault("ultra");
+    const modes = readModes([]);
+    assert.equal(modes.ponytail, "ultra");
+    assert.equal(modes.sessionOverride.ponytail, false);
+  } finally {
+    process.env.XDG_CONFIG_HOME = saved;
+  }
+});
+
 test("caveman default lands in XDG pi/agent dir (its real read path)", async () => {
   const fakeXdg = mkdtempSync(join(tmpdir(), "xdev-xdg-"));
   const saved = { xdg: process.env.XDG_CONFIG_HOME, pi: process.env.PI_CODING_AGENT_DIR };
