@@ -39,14 +39,32 @@ async function statusTable(ctx) {
 export default function xdevExtension(pi) {
   pi.setLabel?.("xdev (bundled plugin manager)");
 
+  // Dispatch each constituent's OWN slash command through the prompt flow —
+  // extension commands execute immediately, mutating their in-process state
+  // and status line, exactly like typing them. No reload/restart needed.
+  function dispatchLive(args, ctx) {
+    if (typeof pi.sendUserMessage === "function") {
+      for (const text of args) pi.sendUserMessage(text);
+      return true;
+    }
+    // Older omp without sendUserMessage: fall back to reload (entries still persist).
+    if (ctx?.reload) {
+      ctx.reload();
+      return true;
+    }
+    return false;
+  }
+
   async function applyLevel(level, ctx) {
     // Defaults → fresh sessions start at the level.
     setCavemanDefault(level);
     setPonytailDefault(level === "off" ? "off" : level);
-    // Live entries → current session adopts it after reload (constituents read
-    // these customTypes on session_start).
+    // Entries → resume/restart consistency (constituents scan these at session_start).
     pi.appendEntry("caveman-level", { level });
     pi.appendEntry("ponytail-mode", { mode: level === "off" ? "off" : level });
+    // Live apply → native commands, instant in-place.
+    const cmd = level === "off" ? "off" : level;
+    dispatchLive([`/caveman ${cmd}`, `/ponytail ${cmd}`], ctx);
   }
 
   const summaryLine = (level) =>
@@ -71,7 +89,6 @@ export default function xdevExtension(pi) {
         if (level) {
           await applyLevel(level, ctx);
           ctx?.ui?.notify?.(`xdev ${level}: ${summaryLine(level)}`, "info");
-          if (ctx?.reload) await ctx.reload();
           return;
         }
 
@@ -80,7 +97,6 @@ export default function xdevExtension(pi) {
           await applyLevel(level, ctx);
           setRtkEnabled(cmd !== "off");
           ctx?.ui?.notify?.(`xdev ${cmd}: ${summaryLine(level)}`, "info");
-          if (ctx?.reload) await ctx.reload();
           return;
         }
 
