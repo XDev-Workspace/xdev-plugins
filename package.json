@@ -1,6 +1,6 @@
 {
   "name": "xdev-plugins",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bundle manager for pi/omp plugins: batch modes (caveman, ponytail, rtk), pinned upgrades, health checks. CLI + /xdev slash command.",
   "type": "module",
   "bin": {
