@@ -1,0 +1,28 @@
+{
+  "name": "xdev-plugins",
+  "version": "0.1.0",
+  "description": "Bundle manager for pi/omp plugins: batch modes (caveman, ponytail, rtk), pinned upgrades, health checks. CLI + /xdev slash command.",
+  "type": "module",
+  "bin": {
+    "xdev": "./bin/x.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "pi-extension",
+    "manifest.json",
+    "README.md"
+  ],
+  "pi": {
+    "extensions": [
+      "./pi-extension/index.js"
+    ]
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "MIT"
+}

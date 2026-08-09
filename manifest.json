@@ -1,0 +1,17 @@
+{
+  "package": "xdev-plugins",
+  "plugins": [
+    {
+      "name": "@dietrichgebert/ponytail",
+      "pin": "4.9.0"
+    },
+    {
+      "name": "pi-caveman",
+      "pin": "1.0.8"
+    },
+    {
+      "name": "pi-rtk-optimizer",
+      "pin": "0.9.0"
+    }
+  ]
+}
