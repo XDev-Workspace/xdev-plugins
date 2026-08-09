@@ -1,27 +1,17 @@
-// /xdev — batch control for bundled plugins (caveman, ponytail, rtk).
-// pi extension contract: registerCommand + session entries + ctx.reload().
+// /xdev — bundle manager: install/update constituent plugins, pinned versions.
+// No mode control; constituents own their own toggles and state.
 import { spawnSync } from "node:child_process";
-import { setCavemanDefault, setPonytailDefault, setRtkEnabled } from "../lib/modes.js";
-import { readModes } from "../lib/modes.js";
 import {
   loadManifest,
   saveManifest,
   installedVersion,
   registryLatest,
   piInstall,
-  normalizeLevel,
-  LEVELS,
 } from "../lib/core.js";
 
-async function statusTable(ctx) {
+async function versionTable() {
   const manifest = loadManifest();
   const lines = [];
-  const entries = ctx?.sessionManager?.getEntries?.() ?? [];
-  const modes = readModes(entries);
-  const s = modes.sessionOverride;
-  lines.push(
-    `modes: caveman=${modes.caveman}${s.caveman ? " (session)" : ""} · ponytail=${modes.ponytail}${s.ponytail ? " (session)" : ""} · rtk=${modes.rtk}`,
-  );
   for (const p of manifest.plugins) {
     const installed = installedVersion(p.name) ?? "MISSING";
     let latest = "?";
@@ -37,26 +27,11 @@ async function statusTable(ctx) {
 }
 
 export default function xdevExtension(pi) {
-  pi.setLabel?.("xdev (bundled plugin manager)");
-
-  // Background-only apply: config defaults + session entries are written
-  // silently. The in-place constituents need a session restart to adopt them
-  // (their state is only re-read at session_start), so we say so up front
-  // instead of pretending a reload does it.
-  const restartHint = "Restart the session to apply: /q, then relaunch omp.";
-
-  function applyLevel(level) {
-    setCavemanDefault(level);
-    setPonytailDefault(level === "off" ? "off" : level);
-    pi.appendEntry("caveman-level", { level });
-    pi.appendEntry("ponytail-mode", { mode: level === "off" ? "off" : level });
-  }
-
-  const summaryLine = (level) =>
-    `caveman=${level} · ponytail=${level === "off" ? "off" : level} · rtk=${level === "off" ? "off" : "on"}`;
+  pi.setLabel?.("xdev (plugin bundle manager)");
 
   pi.registerCommand("xdev", {
-    description: `Batch control bundled plugins. /xdev <${LEVELS.join("|")}|on|off|status|check|upgrade [names]|doctor> [--dry-run]`,
+    description:
+      "Manage bundled plugins. /xdev [status|check|upgrade [names]|doctor] [--dry-run]",
     handler: async (args, ctx) => {
       const raw = String(args || "").trim();
       const dryRun = raw.includes("--dry-run");
@@ -65,23 +40,7 @@ export default function xdevExtension(pi) {
 
       try {
         if (!cmd || cmd === "status" || cmd === "check") {
-          const lines = await statusTable(ctx);
-          ctx?.ui?.notify?.(lines.join("\n"), "info");
-          return;
-        }
-
-        const level = normalizeLevel(cmd);
-        if (level) {
-          applyLevel(level);
-          ctx?.ui?.notify?.(`xdev: ${summaryLine(level)} saved. ${restartHint}`, "info");
-          return;
-        }
-
-        if (cmd === "on" || cmd === "off") {
-          const level = cmd === "on" ? "full" : "off";
-          applyLevel(level);
-          setRtkEnabled(cmd !== "off");
-          ctx?.ui?.notify?.(`xdev: ${summaryLine(level)} saved. ${restartHint}`, "info");
+          ctx?.ui?.notify?.((await versionTable()).join("\n"), "info");
           return;
         }
 
@@ -128,6 +87,7 @@ export default function xdevExtension(pi) {
           }
 
           ctx?.ui?.notify?.(lines.join("\n") + (failed ? "\n⚠ some updates failed" : ""), failed ? "warning" : "info");
+          // New plugin code needs a reload to load.
           if (!dryRun && ctx?.reload) await ctx.reload();
           return;
         }
@@ -138,12 +98,12 @@ export default function xdevExtension(pi) {
             const installed = installedVersion(p.name) ?? "MISSING";
             return `${installed === "MISSING" ? "✗" : "✓"} ${p.name} ${installed} (pin ${p.pin})`;
           });
-          ctx?.ui?.notify?.(lines.join("\n") + "\n(see `pi plugin doctor` for deep checks)", "info");
+          ctx?.ui?.notify?.(lines.join("\n") + "\n(see `omp plugin doctor` for deep checks)", "info");
           return;
         }
 
         ctx?.ui?.notify?.(
-          `/xdev: unknown argument "${cmd}". Levels: ${LEVELS.join("|")}; commands: status|check|upgrade|doctor|on|off`,
+          `/xdev: unknown argument "${cmd}". Commands: status|check|upgrade [names]|doctor [--dry-run]`,
           "warning",
         );
       } catch (e) {

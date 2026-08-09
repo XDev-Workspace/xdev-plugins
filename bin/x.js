@@ -1,26 +1,20 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import {
   loadManifest,
   saveManifest,
   installedVersion,
   registryLatest,
   piInstall,
-  normalizeLevel,
-  LEVELS,
 } from "../lib/core.js";
-import { setCavemanDefault, setPonytailDefault, setRtkEnabled, readModes } from "../lib/modes.js";
-import { spawnSync } from "node:child_process";
 
-const USAGE = `xdev — bundle manager for pi/omp plugins
+const USAGE = `xdev — plugin bundle version manager for pi/omp
 
 Usage:
   xdev install                     install all bundled plugins (missing only)
-  xdev upgrade [name ...]          update plugins to latest; --dry-run to preview
-  xdev check [name ...]            versions: pinned / installed / latest
-  xdev status                      same as check
-  xdev on|off                      enable/disable all bundled modes
-  xdev <level>                     set caveman + ponytail level (${LEVELS.join("|")})
-  xdev doctor                      run pi plugin doctor per constituent
+  xdev upgrade [name ...]          update plugins to latest; --dry-run previews
+  xdev check|status [name ...]     show pinned / installed / latest versions
+  xdev doctor                      per-plugin version report + omp plugin doctor
   xdev version                     print version
 Flags: --dry-run, --scope user|project|both
 `;
@@ -99,15 +93,13 @@ async function main() {
       p.pin = latest;
     }
     saveManifest(manifest);
-    if (!dryRun) console.log("run /reload-plugins (or restart omp) to apply");
+    if (!dryRun) console.log("restart omp (or /reload-plugins) to load new plugin code");
     return failed ? 1 : 0;
   }
 
   if (cmd === "check" || cmd === "status") {
     const manifest = loadManifest();
     const wanted = rest.length ? rest : manifest.plugins.map((p) => p.name);
-    const modes = readModes();
-    console.log(`modes: caveman=${modes.caveman} · ponytail=${modes.ponytail} · rtk=${modes.rtk} (config defaults)`);
     console.log("plugin                    pinned      installed   latest");
     for (const p of manifest.plugins) {
       if (!wanted.includes(p.name)) continue;
@@ -121,16 +113,6 @@ async function main() {
       const flag = installed === "MISSING" ? "✗" : installed !== latest ? "~" : "✓";
       console.log(`${flag} ${p.name.padEnd(28)} ${p.pin.padEnd(11)} ${installed.padEnd(11)} ${latest}`);
     }
-    return 0;
-  }
-
-  if (cmd === "on" || cmd === "off" || normalizeLevel(cmd)) {
-    const level = cmd === "on" ? "full" : cmd === "off" ? "off" : normalizeLevel(cmd);
-    setCavemanDefault(level);
-    setPonytailDefault(level === "off" ? "off" : level);
-    setRtkEnabled(cmd !== "off");
-    console.log(`xdev ${cmd}: caveman=${level} ponytail=${level} rtk=${cmd !== "off" ? "on" : "off"}`);
-    console.log("restart omp or run /reload-plugins to apply");
     return 0;
   }
 
