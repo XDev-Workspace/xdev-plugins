@@ -30,8 +30,8 @@ export default function xdevExtension(pi) {
   pi.setLabel?.("xdev (plugin bundle manager)");
 
   pi.registerCommand("xdev", {
-    description:
-      "Manage bundled plugins. /xdev [status|check|upgrade [names]|doctor] [--dry-run]",
+description:
+      "Manage bundled plugins: /xdev [status|upgrade [names]|doctor] [--dry-run]",
     handler: async (args, ctx) => {
       const raw = String(args || "").trim();
       const dryRun = raw.includes("--dry-run");
@@ -39,7 +39,7 @@ export default function xdevExtension(pi) {
       const [cmd, ...rest] = tokens;
 
       try {
-        if (!cmd || cmd === "status" || cmd === "check") {
+        if (!cmd || cmd === "status") {
           ctx?.ui?.notify?.((await versionTable()).join("\n"), "info");
           return;
         }

@@ -40,7 +40,7 @@ Restart omp (or run `/reload-plugins`).
 
 | Command | Effect |
 |---|---|
-| `/xdev` / `/xdev status` / `/xdev check` | per-plugin versions: pinned / installed / latest |
+| `/xdev` / `/xdev status` | per-plugin versions: pinned / installed / latest |
 | `/xdev upgrade [name ...]` | update plugins to latest, rewrite pins, self-upgrade, reload; `--dry-run` previews |
 | `/xdev doctor` | installed-vs-pin report |
 
@@ -49,7 +49,7 @@ Restart omp (or run `/reload-plugins`).
 ```bash
 xdev install                 # install missing constituents
 xdev upgrade [name ...]      # update to latest, rewrite pins; --dry-run
-xdev check|status [name ...] # pinned / installed / latest table
+xdev status [name ...]     # pinned / installed / latest table
 xdev doctor                  # per-constituent health + `omp plugin doctor`
 xdev version
 ```

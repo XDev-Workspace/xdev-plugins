@@ -13,7 +13,7 @@ const USAGE = `xdev — plugin bundle version manager for pi/omp
 Usage:
   xdev install                     install all bundled plugins (missing only)
   xdev upgrade [name ...]          update plugins to latest; --dry-run previews
-  xdev check|status [name ...]     show pinned / installed / latest versions
+  xdev status [name ...]     show pinned / installed / latest versions
   xdev doctor                      per-plugin version report + omp plugin doctor
   xdev version                     print version
 Flags: --dry-run, --scope user|project|both
@@ -97,7 +97,7 @@ async function main() {
     return failed ? 1 : 0;
   }
 
-  if (cmd === "check" || cmd === "status") {
+  if (cmd === "status") {
     const manifest = loadManifest();
     const wanted = rest.length ? rest : manifest.plugins.map((p) => p.name);
     console.log("plugin                    pinned      installed   latest");
