@@ -55,7 +55,8 @@ export default function xdevExtension(pi) {
 
       try {
         if (!cmd || cmd === "status" || cmd === "check") {
-          ctx?.ui?.notify?.(await statusTable(), "info");
+          const lines = await statusTable();
+          ctx?.ui?.notify?.(lines.join("\n"), "info");
           return;
         }
 
