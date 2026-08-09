@@ -2,6 +2,7 @@
 // pi extension contract: registerCommand + session entries + ctx.reload().
 import { spawnSync } from "node:child_process";
 import { setCavemanDefault, setPonytailDefault, setRtkEnabled } from "../lib/modes.js";
+import { readModes } from "../lib/modes.js";
 import {
   loadManifest,
   saveManifest,
@@ -12,9 +13,15 @@ import {
   LEVELS,
 } from "../lib/core.js";
 
-async function statusTable() {
+async function statusTable(ctx) {
   const manifest = loadManifest();
   const lines = [];
+  const entries = ctx?.sessionManager?.getEntries?.() ?? [];
+  const modes = readModes(entries);
+  const s = modes.sessionOverride;
+  lines.push(
+    `modes: caveman=${modes.caveman}${s.caveman ? " (session)" : ""} · ponytail=${modes.ponytail}${s.ponytail ? " (session)" : ""} · rtk=${modes.rtk}`,
+  );
   for (const p of manifest.plugins) {
     const installed = installedVersion(p.name) ?? "MISSING";
     let latest = "?";
@@ -55,7 +62,7 @@ export default function xdevExtension(pi) {
 
       try {
         if (!cmd || cmd === "status" || cmd === "check") {
-          const lines = await statusTable();
+          const lines = await statusTable(ctx);
           ctx?.ui?.notify?.(lines.join("\n"), "info");
           return;
         }

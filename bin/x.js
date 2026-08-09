@@ -8,7 +8,7 @@ import {
   normalizeLevel,
   LEVELS,
 } from "../lib/core.js";
-import { setCavemanDefault, setPonytailDefault, setRtkEnabled } from "../lib/modes.js";
+import { setCavemanDefault, setPonytailDefault, setRtkEnabled, readModes } from "../lib/modes.js";
 import { spawnSync } from "node:child_process";
 
 const USAGE = `xdev — bundle manager for pi/omp plugins
@@ -106,6 +106,8 @@ async function main() {
   if (cmd === "check" || cmd === "status") {
     const manifest = loadManifest();
     const wanted = rest.length ? rest : manifest.plugins.map((p) => p.name);
+    const modes = readModes();
+    console.log(`modes: caveman=${modes.caveman} · ponytail=${modes.ponytail} · rtk=${modes.rtk} (config defaults)`);
     console.log("plugin                    pinned      installed   latest");
     for (const p of manifest.plugins) {
       if (!wanted.includes(p.name)) continue;
